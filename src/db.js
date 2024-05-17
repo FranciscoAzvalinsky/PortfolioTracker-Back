@@ -2,6 +2,7 @@ require("dotenv").config();
 const { Sequelize } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
+const { DataTypes } = require('sequelize')
 
 const {
     DB_USER, DB_PASSWORD, DB_HOST, DDB
@@ -32,8 +33,37 @@ const capsEntries = entries.map((entry) => [
 sequelize.models = Object.fromEntries(capsEntries);
 
 const {
+    Coin,
+    Transaction,
     User,
+    Wallet,
+
 } = sequelize.models
+
+
+// 1. Each User has one Wallet
+User.belongsTo(Wallet);
+
+// 2. Each Wallet has one User, and can have multiple Coins
+Wallet.belongsTo(User);
+Wallet.belongsToMany(Coin, {
+  through: {
+    model: sequelize.define('WalletCoins', {
+      CoinAmount: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      }
+    }, { timestamps: false }),
+    foreignKey: 'WalletId'
+  }
+});
+
+
+// 3. Each Transaction has a Wallet and a Coin
+Transaction.belongsTo(Wallet);
+Transaction.belongsTo(Coin);
+
 
 module.exports = {
     ...sequelize.models,
